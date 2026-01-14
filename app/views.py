@@ -1,52 +1,60 @@
+from django.shortcuts import render
 from rest_framework.views import APIView 
-from rest_framework.generics import ListAPIView,RetrieveAPIView,CreateAPIView,RetrieveUpdateDestroyAPIView
+from rest_framework.generics import ListAPIView,RetrieveAPIView,CreateAPIView,RetrieveUpdateDestroyAPIView,ListCreateAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from datetime import datetime 
 from .models import Category, Product
 from .serializers import ParentCategoryModelSerializer,ProductSerializer,CreateCategorySerializer,CreateProductSerializer,ProductListSerializer
-
+from rest_framework import permissions
+from .permissions import ISCayomBlocked,WorkDay
 
 class ParentCategoryListApiView(ListAPIView):
-    queryset  =Category.objects.all()
     serializer_class = ParentCategoryModelSerializer
 
-
     def get_queryset(self):
-        queryset = Category.objects.filter(parent__isnull = True)
-        return queryset
+        return Category.objects.filter(parent__isnull=True)
 
 
 class ChildrenCategoryByCategorySlug(ListAPIView):
-    queryset = Category.objects.all()
     serializer_class = ParentCategoryModelSerializer
 
     def get_queryset(self):
         category_slug = self.kwargs['slug']
-        queryset = Category.objects.filter(slug=category_slug).first()
-        if not queryset:
+        parent = Category.objects.filter(slug=category_slug).first()
+        if not parent:
             return Category.objects.none()
-        
-        return queryset.children.all()
+        return parent.children.all()
+ 
 
-class ProductListByChildCategorySlug(ListAPIView):
+class ProductListByChildCategorySlug(ListCreateAPIView):
     serializer_class = ProductSerializer
+    permission_classes = [WorkDay]
 
     def get_queryset(self):
-        slug = self.kwargs['slug']
-        category = Category.objects.filter(slug=slug).first()
-        if not category:
+        parent_slug = self.kwargs['slug']
+        child_slug = self.kwargs['child_slug']
+
+        parent_category = Category.objects.filter(slug=parent_slug).first()
+        if not parent_category:
             return Product.objects.none()
-        return Product.objects.filter(category=category)
+
+        child_category = parent_category.children.filter(slug=child_slug).first()
+        if not child_category:
+            return Product.objects.none()
+
+        return child_category.products.all()
 
 
 class CategoryCreateApiView(CreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CreateCategorySerializer
 
+
 class ProductCreateApiView(CreateAPIView):
     queryset = Product.objects.all()
     serializer_class = CreateProductSerializer
+
 
 class ProductListAPiView(ListAPIView):
     queryset = Product.objects.all()

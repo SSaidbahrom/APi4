@@ -34,12 +34,14 @@ class ProductListSerializer(serializers.ModelSerializer):
 
 class ParentCategoryModelSerializer(serializers.ModelSerializer):
     product_count = serializers.SerializerMethodField()
-    class Meta:
-        model = Category
-        fields = '__all__'
 
     def get_product_count(self, obj):
         count = obj.products.count()
         for child in obj.children.filter(is_active=True):
             count += self.get_product_count(child)
         return count
+    class Meta:
+        model = Category
+        fields = '__all__'
+
+
