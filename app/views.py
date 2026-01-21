@@ -2,12 +2,23 @@ from django.shortcuts import render
 from rest_framework.views import APIView 
 from rest_framework.generics import ListAPIView,RetrieveAPIView,CreateAPIView,RetrieveUpdateDestroyAPIView,ListCreateAPIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status,permissions
 from datetime import datetime 
 from .models import Category, Product
 from .serializers import ParentCategoryModelSerializer,ProductSerializer,CreateCategorySerializer,CreateProductSerializer,ProductListSerializer
-from rest_framework import permissions
 from .permissions import ISCayomBlocked,WorkDay
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
+
+class CustomAuthToken(ObtainAuthToken):
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        token, _ = Token.objects.get_or_create(user=user)
+        return Response({"token": token.key})
 
 class ParentCategoryListApiView(ListAPIView):
     serializer_class = ParentCategoryModelSerializer
@@ -50,12 +61,31 @@ class CategoryCreateApiView(CreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CreateCategorySerializer
 
+class CustomAuthToken(ObtainAuthToken):
 
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data,
+                                           context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({
+            'token': token.key,
+            'user_id': user.pk,
+            'email': user.email,
+            'token': token.key
+        })
+    
 class ProductCreateApiView(CreateAPIView):
     queryset = Product.objects.all()
     serializer_class = CreateProductSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
 
 class ProductListAPiView(ListAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductListSerializer
+
+
+

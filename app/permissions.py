@@ -5,7 +5,7 @@ class ISCayomBlocked(BasePermission):
     def has_permission(self, request, view):
         if request.user.username == 'ismoil':
             return False
-        return True
+        return True 
 
 class WorkDay(BasePermission):
     def has_permission(self, request, view):

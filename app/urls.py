@@ -8,4 +8,8 @@ urlpatterns = [
     path('category/create/', views.CategoryCreateApiView.as_view()),
     path('create/product/', views.ProductCreateApiView.as_view()),
     path('products/', views.ProductListAPiView.as_view()),
+    path('api-token-auth/', views.CustomAuthToken.as_view()),
+    path('api/login/', views.CustomAuthToken.as_view()),
+    path('api/product/create/', views.ProductCreateApiView.as_view()),
 ]
+
